@@ -1,19 +1,17 @@
 import express from "express";
 import axios from "axios";
-import redis from "redis";
+import IORedis from "ioredis";
+import os from "node:os";
+
+const hostname = os.hostname();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-let redisClient;
-
-(async () => {
-  redisClient = redis.createClient();
-
-  redisClient.on("error", (error) => console.error(`Error : ${error}`));
-
-  await redisClient.connect();
-})();
+const redisClient = new IORedis({
+	host: "redis.hop",
+	port: 6379,
+});
 
 async function fetchApiData(species) {
   const apiResponse = await axios.get(
