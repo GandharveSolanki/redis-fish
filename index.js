@@ -5,7 +5,7 @@ import redis from "redis";
 const app = express();
 const port = process.env.PORT || 3000;
 
-const redisClient = await createClient({
+const redisClient = await redis.createClient({
     password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
     socket: {
         host: 'redis-16490.c15.us-east-1-4.ec2.cloud.redislabs.com',
