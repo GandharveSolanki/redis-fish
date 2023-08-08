@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 
 // Use the Redis client configuration provided by the cloud service
 const redisClient = createClient({
-    password: '<password>',
+    password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
     socket: {
         host: 'redis-16490.c15.us-east-1-4.ec2.cloud.redislabs.com',
         port: 16490
@@ -30,12 +30,16 @@ app.listen(port, async () => {
 
 async function fetchApiData(species) {
   const apiResponse = await axios.get(
-    `https://www.fishwatch.gov/api/species/${species}`
+    `https://www.fishwatch.gov/api/species/${species}`,
+    {
+      headers: {
+        Authorization: `Bearer ${client.get("authToken")}`,
+      },
+    }
   );
   console.log("Request sent to the API");
   return apiResponse.data;
 }
-
 
 async function cacheData(req, res, next) {
   const species = req.params.species;
@@ -66,9 +70,10 @@ async function getSpeciesData(req, res) {
     if (results.length === 0) {
       throw "API returned an empty array";
     }
-    await redisClient.set(species, JSON.stringify(results), {
+    await client.set(species, JSON.stringify(results), {
       EX: 180,
       NX: true,
+      password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
     });
 
     res.send({
