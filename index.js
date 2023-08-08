@@ -16,26 +16,13 @@ const redisClient = createClient({
 
 redisClient.on("error", (error) => console.error(`Error : ${error}`));
 
-// Move the async function inside the app.listen callback
-app.listen(port, async () => {
+app.listen(port, () => {
   console.log(`App listening on port ${port}`);
-  
-  // Your Redis client is available here, so perform any necessary setup
-  try {
-    await redisClient.connect();
-  } catch (error) {
-    console.error("Error connecting to Redis:", error);
-  }
 });
 
 async function fetchApiData(species) {
   const apiResponse = await axios.get(
-    `https://www.fishwatch.gov/api/species/${species}`,
-    {
-      headers: {
-        Authorization: `Bearer ${redisClient.get("authToken")}`,
-      },
-    }
+    `https://www.fishwatch.gov/api/species/${species}`
   );
   console.log("Request sent to the API");
   return apiResponse.data;
@@ -43,11 +30,10 @@ async function fetchApiData(species) {
 
 async function cacheData(req, res, next) {
   const species = req.params.species;
-  let results;
   try {
     const cacheResults = await redisClient.get(species);
     if (cacheResults) {
-      results = JSON.parse(cacheResults);
+      const results = JSON.parse(cacheResults);
       res.send({
         fromCache: true,
         data: results,
@@ -57,32 +43,39 @@ async function cacheData(req, res, next) {
     }
   } catch (error) {
     console.error(error);
-    res.status(404);
+    res.status(404).send("Cache error");
   }
 }
 
 async function getSpeciesData(req, res) {
   const species = req.params.species;
-  let results;
 
   try {
-    results = await fetchApiData(species);
-    if (results.length === 0) {
-      throw "API returned an empty array";
-    }
-    await redisClient.set(species, JSON.stringify(results), {
-      EX: 180,
-      NX: true,
-      password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
-    });
+    const cacheResults = await redisClient.get(species);
+    if (cacheResults) {
+      const results = JSON.parse(cacheResults);
+      res.send({
+        fromCache: true,
+        data: results,
+      });
+    } else {
+      const results = await fetchApiData(species);
+      if (results.length === 0) {
+        throw "API returned an empty array";
+      }
+      await redisClient.set(species, JSON.stringify(results), {
+        EX: 180,
+        NX: true,
+      });
 
-    res.send({
-      fromCache: false,
-      data: results,
-    });
+      res.send({
+        fromCache: false,
+        data: results,
+      });
+    }
   } catch (error) {
     console.error(error);
-    res.status(404).send("Data unavailable");
+    res.status(404).send("Data error");
   }
 }
 
