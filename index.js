@@ -33,7 +33,7 @@ async function fetchApiData(species) {
     `https://www.fishwatch.gov/api/species/${species}`,
     {
       headers: {
-        Authorization: `Bearer ${client.get("authToken")}`,
+        Authorization: `Bearer ${redisClient.get("authToken")}`,
       },
     }
   );
@@ -70,7 +70,7 @@ async function getSpeciesData(req, res) {
     if (results.length === 0) {
       throw "API returned an empty array";
     }
-    await client.set(species, JSON.stringify(results), {
+    await redisClient.set(species, JSON.stringify(results), {
       EX: 180,
       NX: true,
       password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
