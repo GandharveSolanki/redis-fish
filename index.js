@@ -1,13 +1,13 @@
 import express from "express";
 import axios from "axios";
-import { createClient } from 'redis';  // Import createClient function from 'redis'
+import { createClient } from 'redis';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Use the Redis client configuration provided by the cloud service
 const redisClient = createClient({
-    password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
+    password: '<password>',
     socket: {
         host: 'redis-16490.c15.us-east-1-4.ec2.cloud.redislabs.com',
         port: 16490
@@ -16,6 +16,18 @@ const redisClient = createClient({
 
 redisClient.on("error", (error) => console.error(`Error : ${error}`));
 
+// Move the async function inside the app.listen callback
+app.listen(port, async () => {
+  console.log(`App listening on port ${port}`);
+  
+  // Your Redis client is available here, so perform any necessary setup
+  try {
+    await redisClient.connect();
+  } catch (error) {
+    console.error("Error connecting to Redis:", error);
+  }
+});
+
 async function fetchApiData(species) {
   const apiResponse = await axios.get(
     `https://www.fishwatch.gov/api/species/${species}`
@@ -23,6 +35,7 @@ async function fetchApiData(species) {
   console.log("Request sent to the API");
   return apiResponse.data;
 }
+
 
 async function cacheData(req, res, next) {
   const species = req.params.species;
