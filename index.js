@@ -1,14 +1,12 @@
 import express from "express";
 import axios from "axios";
-import redis from "redis";
+import { createClient } from 'redis';  // Import createClient function from 'redis'
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-let redisClient;
-
-(async () => {
-  redisClient = createClient({
+// Use the Redis client configuration provided by the cloud service
+const redisClient = createClient({
     password: 'swUkW8EvYdWXLPTY7ke8FbBr0ywqSiFb',
     socket: {
         host: 'redis-16490.c15.us-east-1-4.ec2.cloud.redislabs.com',
@@ -16,10 +14,7 @@ let redisClient;
     }
 });
 
-  redisClient.on("error", (error) => console.error(`Error : ${error}`));
-
-  await redisClient.connect();
-})();
+redisClient.on("error", (error) => console.error(`Error : ${error}`));
 
 async function fetchApiData(species) {
   const apiResponse = await axios.get(
@@ -48,6 +43,7 @@ async function cacheData(req, res, next) {
     res.status(404);
   }
 }
+
 async function getSpeciesData(req, res) {
   const species = req.params.species;
   let results;
